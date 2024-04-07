@@ -8,7 +8,7 @@ pub struct PluginPool {
 
 impl PluginPool {
 
-    pub fn load_plugins(self, api: &PluginApi, path: &str) {
+    pub fn load_plugins(&self, api: &PluginApi, path: &str) {
         let paths = fs::read_dir(path).unwrap();
 
         for path in paths {
