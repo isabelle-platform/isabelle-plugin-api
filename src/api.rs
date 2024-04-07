@@ -101,3 +101,5 @@ pub struct PluginApi {
 pub type IsabellePluginRegisterFn = fn(
     api: &PluginApi);
 
+unsafe impl Send for PluginApi {}
+
