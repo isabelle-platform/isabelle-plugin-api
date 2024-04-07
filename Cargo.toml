@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 isabelle-dm = { "git" = "https://github.com/isabelle-platform/isabelle-dm" }
+libloading = "0.8.3"
