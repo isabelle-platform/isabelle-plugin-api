@@ -98,6 +98,81 @@ pub struct PluginApi {
         IsabelleRouteCallOtpHook) -> bool>,
 }
 
+impl PluginApi {
+    pub fn new() -> Self {
+        Self {
+            /* database */
+            db_get_all_items: Box::new(|_collection, _sort_key, _filter| {
+                return ListResult {
+                    map: HashMap::new(),
+                    total_count: 0,
+                };
+            }),
+            db_get_items: Box::new(|_collection, _id_min, _id_max, _sort_key, _filter, _skip, _limit| {
+                return ListResult {
+                    map: HashMap::new(),
+                    total_count: 0,
+                };
+            }),
+            db_get_item: Box::new(|_collection, _id| {
+                return None;
+            }),
+            db_set_item: Box::new(|_collection, _itm, _merge| {
+            }),
+            db_del_item: Box::new(|_collection, _id| {
+                return false;
+            }),
+
+            /* globals */
+            globals_get_public_url: Box::new(|| {
+                return "".to_string();
+            }),
+
+            /* exposed functions */
+
+            fn_send_email: Box::new(|_to, _subject, _body| {
+            }),
+
+            /* routes */
+            route_register_item_pre_edit_hook: Box::new(|_name, _hook| {
+                return false;
+            }),
+
+            route_register_item_post_edit_hook: Box::new(|_name, _hook| {
+                return false;
+            }),
+
+            route_register_item_auth_hook: Box::new(|_name, _hook| {
+                return false;
+            }),
+
+            route_register_item_list_filter_hook: Box::new(|_name, _hook| {
+                return false;
+            }),
+
+            route_register_url_hook: Box::new(|_name, _hook| {
+                return false;
+            }),
+
+            route_register_unprotected_url_hook: Box::new(|_name, _hook| {
+                return false;
+            }),
+
+            route_register_unprotected_url_post_hook: Box::new(|_name, _hook| {
+                return false;
+            }),
+
+            route_register_collection_read_hook: Box::new(|_name, _hook| {
+                return false;
+            }),
+
+            route_register_call_otp_hook: Box::new(|_name, _hook| {
+                return false;
+            }),
+        }
+    }
+}
+
 pub type IsabellePluginRegisterFn = fn(
     api: &PluginApi);
 
