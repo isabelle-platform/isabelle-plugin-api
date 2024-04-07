@@ -85,17 +85,17 @@ pub struct PluginApi {
         IsabelleRouteUrlHook) -> bool>,
     pub route_register_unprotected_url_hook: Box<dyn Fn(
         &str,
-        IsabelleRouteUnprotectedUrlHook)>,
+        IsabelleRouteUnprotectedUrlHook) -> bool>,
     pub route_register_unprotected_url_post_hook: Box<dyn Fn(
         &str,
-        IsabelleRouteUnprotectedUrlPostHook)>,
+        IsabelleRouteUnprotectedUrlPostHook) -> bool>,
 
     pub route_register_collection_read_hook: Box<dyn Fn(
         &str,
-        IsabelleRouteCollectionReadHook)>,
+        IsabelleRouteCollectionReadHook) -> bool>,
     pub route_register_call_otp_hook: Box<dyn Fn(
         &str,
-        IsabelleRouteCallOtpHook)>,
+        IsabelleRouteCallOtpHook) -> bool>,
 }
 
 pub type IsabellePluginRegisterFn = fn(
