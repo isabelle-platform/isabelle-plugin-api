@@ -57,9 +57,9 @@ pub type IsabelleRouteCallOtpHook = fn(
 
 pub struct PluginApi {
     /* database */
-    pub db_get_all_items: Box<dyn Fn(&str, &str, &str) -> Item>,
+    pub db_get_all_items: Box<dyn Fn(&str, &str, &str) -> ListResult>,
     pub db_get_items: Box<dyn Fn(&str, u64, u64, &str, &str, u64, u64) -> ListResult>,
-    pub db_get_item: Box<dyn Fn(&str, u64) -> Item>,
+    pub db_get_item: Box<dyn Fn(&str, u64) -> Option<Item>>,
     pub db_set_item: Box<dyn Fn(&str, &Item, &bool)>,
     pub db_del_item: Box<dyn Fn(&str, u64)>,
 
