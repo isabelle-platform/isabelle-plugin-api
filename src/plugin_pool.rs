@@ -26,3 +26,5 @@ impl PluginPool {
         }
     }
 }
+
+unsafe impl Send for PluginPool {}
