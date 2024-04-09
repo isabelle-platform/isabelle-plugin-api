@@ -12,6 +12,7 @@ pub enum WebResponse {
 }
 
 pub type IsabelleRouteItemPreEditHook = fn(
+    api: &PluginApi,
     user: &Option<Item>,
     collection: &str,
     old_itm: Option<Item>,
@@ -19,10 +20,12 @@ pub type IsabelleRouteItemPreEditHook = fn(
     del: bool,
     merge: bool) -> ProcessResult;
 pub type IsabelleRouteItemPostEditHook = fn(
+    api: &PluginApi,
     collection: &str,
     id: u64,
     del: bool);
 pub type IsabelleRouteItemAuthHook = fn(
+    api: &PluginApi,
     user: &Option<Item>,
     collection: &str,
     id: u64,
@@ -30,29 +33,35 @@ pub type IsabelleRouteItemAuthHook = fn(
     del: bool) -> bool;
 
 pub type IsabelleRouteItemListFilterHook = fn(
+    api: &PluginApi,
     user: &Option<Item>,
     collection: &str,
     context: &str,
     map: &mut HashMap<u64, Item>);
 
 pub type IsabelleRouteUrlHook = fn(
+    api: &PluginApi,
     user: &Option<Item>,
     query: &str) -> WebResponse;
 
 pub type IsabelleRouteUnprotectedUrlHook = fn(
+    api: &PluginApi,
     user: &Option<Item>,
     query: &str) -> WebResponse;
 
 pub type IsabelleRouteUnprotectedUrlPostHook = fn(
+    api: &PluginApi,
     user: &Option<Item>,
     query: &str,
     itm: &Item) -> WebResponse;
 
 pub type IsabelleRouteCollectionReadHook = fn(
+    api: &PluginApi,
     collection: &str,
     itm: &mut Item) -> bool;
 
 pub type IsabelleRouteCallOtpHook = fn(
+    api: &PluginApi,
     itm: &Item);
 
 pub struct PluginApi {
