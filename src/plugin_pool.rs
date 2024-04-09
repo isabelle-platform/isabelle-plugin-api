@@ -13,9 +13,9 @@ impl PluginPool {
         let paths = fs::read_dir(path).unwrap();
         info!("Loading plugins from {}", path);
         for path in paths {
-            let file_name = path.unwrap().path().display().to_string();
+            let file_name = path.unwrap().path().file_name().unwrap().to_string_lossy().to_string();
             info!("File name: {}", file_name);
-            if file_name.starts_with("libisabelle-plugin-") {
+            if file_name.starts_with("libisabelle_plugin_") {
                 info!("Library: {}", file_name);
                 unsafe {
                     let lib = Library::new(file_name).unwrap();
