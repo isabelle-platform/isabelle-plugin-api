@@ -66,6 +66,9 @@ pub struct PluginApi {
     /* globals */
     pub globals_get_public_url: Box<dyn Fn() -> String>,
 
+    /* auth */
+    pub auth_check_role: Box<dyn Fn(&Option<Item>, &str) -> bool>,
+
     /* exposed functions */
     pub fn_send_email: Box<dyn Fn(&str, &str, &str)>,
 
@@ -120,6 +123,11 @@ impl PluginApi {
             db_set_item: Box::new(|_collection, _itm, _merge| {
             }),
             db_del_item: Box::new(|_collection, _id| {
+                return false;
+            }),
+
+            /* auth */
+            auth_check_role: Box::new(|_user, _role| {
                 return false;
             }),
 
