@@ -19,12 +19,24 @@ impl PluginPool {
                 info!("Library: {}", file_name);
                 unsafe {
                     info!("Loading library");
-                    let lib = Library::new(file_name).unwrap();
-                    info!("Library loaded");
-                    let func: Symbol<IsabellePluginRegisterFn> = lib.get(b"register").unwrap();
-                    info!("Registering");
-                    func(api);
-                    info!("Registration done");
+                    match Library::new(file_name.clone()) {
+                        Ok(lib) => {
+                            info!("Library loaded");
+                            match lib.get::<Symbol<IsabellePluginRegisterFn>>(b"register") {
+                                Ok(func) => {
+                                    info!("Registering");
+                                    func(api);
+                                    info!("Registration done");
+                                }
+                                Err(e) => {
+                                    info!("Symbol error: {}", e);
+                                }
+                            };
+                        }
+                        Err(e) => {
+                            info!("Error: {}", e);
+                        }
+                    }
                 }
             }
         }
