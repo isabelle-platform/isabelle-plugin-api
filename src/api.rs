@@ -5,6 +5,7 @@ use isabelle_dm::data_model::process_result::ProcessResult;
 
 pub enum WebResponse {
     Ok,
+    OkData(String),
     NotFound,
     Unauthorized,
     BadRequest,
