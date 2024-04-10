@@ -79,6 +79,7 @@ pub struct PluginApi {
     pub auth_check_role: Box<dyn Fn(&Option<Item>, &str) -> bool>,
     pub auth_get_new_salt: Box<dyn Fn() -> String>,
     pub auth_get_password_hash: Box<dyn Fn(&str, &str) -> String>,
+    pub auth_verify_pasword: Box<dyn Fn(&str, &str) -> bool>,
 
     /* exposed functions */
     pub fn_send_email: Box<dyn Fn(&str, &str, &str)>,
@@ -150,7 +151,9 @@ impl PluginApi {
                 return "".to_string();
             }),
 
-
+            auth_verify_pasword: Box::new(|_pw, _hash| {
+                return false;
+            }),
 
             /* globals */
             globals_get_public_url: Box::new(|| {
