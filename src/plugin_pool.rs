@@ -20,7 +20,9 @@ impl PluginPool {
                 unsafe {
                     let lib = Library::new(file_name).unwrap();
                     let func: Symbol<IsabellePluginRegisterFn> = lib.get(b"register").unwrap();
+                    info!("Registering");
                     func(api);
+                    info!("Registration done");
                 }
             }
         }
