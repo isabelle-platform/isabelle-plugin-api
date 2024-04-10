@@ -74,6 +74,7 @@ pub struct PluginApi {
 
     /* globals */
     pub globals_get_public_url: Box<dyn Fn() -> String>,
+    pub globals_get_settings: Box<dyn Fn() -> Item>,
 
     /* auth */
     pub auth_check_role: Box<dyn Fn(&Option<Item>, &str) -> bool>,
@@ -158,6 +159,10 @@ impl PluginApi {
             /* globals */
             globals_get_public_url: Box::new(|| {
                 return "".to_string();
+            }),
+
+            globals_get_settings: Box::new(|| {
+                return Item::new();
             }),
 
             /* exposed functions */
