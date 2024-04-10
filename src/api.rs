@@ -84,6 +84,8 @@ pub struct PluginApi {
 
     /* exposed functions */
     pub fn_send_email: Box<dyn Fn(&str, &str, &str)>,
+    pub fn_init_google: Box<dyn Fn() -> String>,
+    pub fn_sync_with_google: Box<dyn Fn(bool, String, String)>,
 
     /* routes */
     pub route_register_item_pre_edit_hook: Box<dyn Fn(&str,
@@ -168,6 +170,13 @@ impl PluginApi {
             /* exposed functions */
 
             fn_send_email: Box::new(|_to, _subject, _body| {
+            }),
+
+            fn_init_google: Box::new(|| {
+                return "".to_string();
+            }),
+
+            fn_sync_with_google: Box::new(|_add, _name, _date_time| {
             }),
 
             /* routes */
