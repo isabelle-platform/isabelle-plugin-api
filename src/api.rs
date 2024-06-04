@@ -26,6 +26,7 @@ use isabelle_dm::data_model::item::Item;
 use isabelle_dm::data_model::list_result::ListResult;
 use isabelle_dm::data_model::process_result::ProcessResult;
 
+#[repr(C)]
 /// Canonical web responses
 pub enum WebResponse {
     Ok,
@@ -89,6 +90,7 @@ pub type IsabelleRouteCallOtpHook = fn(
     api: &PluginApi,
     itm: &Item);
 
+#[repr(C)]
 /// Generic plugin API structure
 pub struct PluginApi {
     /* database */

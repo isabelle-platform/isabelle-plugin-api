@@ -26,6 +26,7 @@ use libloading::{Library, Symbol};
 use std::fs;
 use log::info;
 
+#[repr(C)]
 /// Plugin pool structure
 pub struct PluginPool {
 }
