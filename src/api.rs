@@ -37,220 +37,83 @@ pub enum WebResponse {
     Forbidden,
 }
 
-pub type IsabelleRouteItemPreEditHook = fn(
-    api: &PluginApi,
-    user: &Option<Item>,
-    collection: &str,
-    old_itm: Option<Item>,
-    itm: &mut Item,
-    del: bool,
-    merge: bool) -> ProcessResult;
-pub type IsabelleRouteItemPostEditHook = fn(
-    api: &PluginApi,
-    collection: &str,
-    id: u64,
-    del: bool);
-pub type IsabelleRouteItemAuthHook = fn(
-    api: &PluginApi,
-    user: &Option<Item>,
-    collection: &str,
-    id: u64,
-    new_item: Option<Item>,
-    del: bool) -> bool;
+pub trait Plugin {
+    fn item_pre_edit_hook(&mut self,
+        api: Box<dyn PluginApi>,
+        user: &Option<Item>,
+        collection: &str,
+        old_itm: Option<Item>,
+        itm: &mut Item,
+        del: bool,
+        merge: bool) -> ProcessResult;
+    fn item_post_edit_hook(&mut self,
+        api: Box<dyn PluginApi>,
+        collection: &str,
+        id: u64,
+        del: bool);
+    fn item_auth_hook(&mut self,
+        api: Box<dyn PluginApi>,
+        user: &Option<Item>,
+        collection: &str,
+        id: u64,
+        new_item: Option<Item>,
+        del: bool) -> bool;
+    fn item_list_filter_hook(&mut self,
+        api: Box<dyn PluginApi>,
+        user: &Option<Item>,
+        collection: &str,
+        context: &str,
+        map: &mut HashMap<u64, Item>);
 
-pub type IsabelleRouteItemListFilterHook = fn(
-    api: &PluginApi,
-    user: &Option<Item>,
-    collection: &str,
-    context: &str,
-    map: &mut HashMap<u64, Item>);
-
-pub type IsabelleRouteUrlHook = fn(
-    api: &PluginApi,
-    user: &Option<Item>,
-    query: &str) -> WebResponse;
-
-pub type IsabelleRouteUnprotectedUrlHook = fn(
-    api: &PluginApi,
-    user: &Option<Item>,
-    query: &str) -> WebResponse;
-
-pub type IsabelleRouteUnprotectedUrlPostHook = fn(
-    api: &PluginApi,
-    user: &Option<Item>,
-    query: &str,
-    itm: &Item) -> WebResponse;
-
-pub type IsabelleRouteCollectionReadHook = fn(
-    api: &PluginApi,
-    collection: &str,
-    itm: &mut Item) -> bool;
-
-pub type IsabelleRouteCallOtpHook = fn(
-    api: &PluginApi,
-    itm: &Item);
-
-#[repr(C)]
-/// Generic plugin API structure
-pub struct PluginApi {
-    /* database */
-    pub db_get_all_items: Box<dyn Fn(&str, &str, &str) -> ListResult>,
-    pub db_get_items: Box<dyn Fn(&str, u64, u64, &str, &str, u64, u64) -> ListResult>,
-    pub db_get_item: Box<dyn Fn(&str, u64) -> Option<Item>>,
-    pub db_set_item: Box<dyn Fn(&str, &Item, &bool)>,
-    pub db_del_item: Box<dyn Fn(&str, u64) -> bool>,
-
-    /* globals */
-    pub globals_get_public_url: Box<dyn Fn() -> String>,
-    pub globals_get_settings: Box<dyn Fn() -> Item>,
-
-    /* auth */
-    pub auth_check_role: Box<dyn Fn(&Option<Item>, &str) -> bool>,
-    pub auth_get_new_salt: Box<dyn Fn() -> String>,
-    pub auth_get_password_hash: Box<dyn Fn(&str, &str) -> String>,
-    pub auth_verify_password: Box<dyn Fn(&str, &str) -> bool>,
-
-    /* exposed functions */
-    pub fn_send_email: Box<dyn Fn(&str, &str, &str)>,
-    pub fn_init_google: Box<dyn Fn() -> String>,
-    pub fn_sync_with_google: Box<dyn Fn(bool, String, String)>,
-
-    /* routes */
-    pub route_register_item_pre_edit_hook: Box<dyn Fn(&str,
-        IsabelleRouteItemPreEditHook) -> bool>,
-    pub route_register_item_post_edit_hook: Box<dyn Fn(&str,
-        IsabelleRouteItemPostEditHook) -> bool>,
-    pub route_register_item_auth_hook: Box<dyn Fn(
-        &str,
-        IsabelleRouteItemAuthHook) -> bool>,
-    pub route_register_item_list_filter_hook: Box<dyn Fn(
-        &str,
-        IsabelleRouteItemListFilterHook) -> bool>,
-    pub route_register_url_hook: Box<dyn Fn(
-        &str,
-        IsabelleRouteUrlHook) -> bool>,
-    pub route_register_unprotected_url_hook: Box<dyn Fn(
-        &str,
-        IsabelleRouteUnprotectedUrlHook) -> bool>,
-    pub route_register_unprotected_url_post_hook: Box<dyn Fn(
-        &str,
-        IsabelleRouteUnprotectedUrlPostHook) -> bool>,
-
-    pub route_register_collection_read_hook: Box<dyn Fn(
-        &str,
-        IsabelleRouteCollectionReadHook) -> bool>,
-    pub route_register_call_otp_hook: Box<dyn Fn(
-        &str,
-        IsabelleRouteCallOtpHook) -> bool>,
+    fn route_url_hook(&mut self,
+        api: Box<dyn PluginApi>,
+        user: &Option<Item>,
+        query: &str) -> WebResponse;
+    fn route_unprotected_url_hook(&mut self,
+        api: Box<dyn PluginApi>,
+        user: &Option<Item>,
+        query: &str) -> WebResponse;
+    fn route_unprotected_url_post_hook(&mut self,
+        api: Box<dyn PluginApi>,
+        user: &Option<Item>,
+        query: &str,
+        itm: &Item) -> WebResponse;
+    fn route_collection_read_hook(&mut self,
+        api: Box<dyn PluginApi>,
+        collection: &str,
+        itm: &mut Item) -> bool;
+    fn route_call_otp_hook(&mut self,
+        api: Box<dyn PluginApi>,
+        itm: &Item);
 }
 
-impl PluginApi {
+pub trait PluginApi {
+    fn db_get_all_items(&self, collection: &str, sort_key: &str, filter: &str)
+        -> ListResult;
+    fn db_get_items(&self, collection: &str,
+        id_min: u64,
+        id_max: u64,
+        sort_key: &str,
+        filter: &str,
+        skip: u64,
+        limit: u64) -> ListResult;
+    fn db_get_item(&self, collection: &str, id: u64) -> Option<Item>;
+    fn db_set_item(&self, collection: &str, itm: &Item, merge: bool);
+    fn db_del_item(&self, collection: &str, id: u64) -> bool;
 
-    /// Fill API with empty implementation
-    pub fn new() -> Self {
-        Self {
-            /* database */
-            db_get_all_items: Box::new(|_collection, _sort_key, _filter| {
-                return ListResult {
-                    map: HashMap::new(),
-                    total_count: 0,
-                };
-            }),
-            db_get_items: Box::new(|_collection, _id_min, _id_max, _sort_key, _filter, _skip, _limit| {
-                return ListResult {
-                    map: HashMap::new(),
-                    total_count: 0,
-                };
-            }),
-            db_get_item: Box::new(|_collection, _id| {
-                return None;
-            }),
-            db_set_item: Box::new(|_collection, _itm, _merge| {
-            }),
-            db_del_item: Box::new(|_collection, _id| {
-                return false;
-            }),
+    fn globals_get_public_url(&self) -> String;
+    fn global_get_settings(&self) -> Item;
 
-            /* auth */
-            auth_check_role: Box::new(|_user, _role| {
-                return false;
-            }),
+    fn auth_check_role(&self, itm: &Option<Item>, role: &str) -> bool;
+    fn auth_get_new_salt(&self) -> String;
+    fn auth_get_password_hash(&self, pw: &str, salt: &str) -> String;
+    fn auth_verify_password(&self, pw: &str, pw_hash: &str) -> bool;
 
-            auth_get_new_salt: Box::new(|| {
-                return "".to_string();
-            }),
-
-            auth_get_password_hash: Box::new(|_old, _salt| {
-                return "".to_string();
-            }),
-
-            auth_verify_password: Box::new(|_pw, _hash| {
-                return false;
-            }),
-
-            /* globals */
-            globals_get_public_url: Box::new(|| {
-                return "".to_string();
-            }),
-
-            globals_get_settings: Box::new(|| {
-                return Item::new();
-            }),
-
-            /* exposed functions */
-
-            fn_send_email: Box::new(|_to, _subject, _body| {
-            }),
-
-            fn_init_google: Box::new(|| {
-                return "".to_string();
-            }),
-
-            fn_sync_with_google: Box::new(|_add, _name, _date_time| {
-            }),
-
-            /* routes */
-            route_register_item_pre_edit_hook: Box::new(|_name, _hook| {
-                return false;
-            }),
-
-            route_register_item_post_edit_hook: Box::new(|_name, _hook| {
-                return false;
-            }),
-
-            route_register_item_auth_hook: Box::new(|_name, _hook| {
-                return false;
-            }),
-
-            route_register_item_list_filter_hook: Box::new(|_name, _hook| {
-                return false;
-            }),
-
-            route_register_url_hook: Box::new(|_name, _hook| {
-                return false;
-            }),
-
-            route_register_unprotected_url_hook: Box::new(|_name, _hook| {
-                return false;
-            }),
-
-            route_register_unprotected_url_post_hook: Box::new(|_name, _hook| {
-                return false;
-            }),
-
-            route_register_collection_read_hook: Box::new(|_name, _hook| {
-                return false;
-            }),
-
-            route_register_call_otp_hook: Box::new(|_name, _hook| {
-                return false;
-            }),
-        }
-    }
+    fn fn_send_email(&self, to: &str, subject: &str, body: &str);
+    fn fn_init_google(&self) -> String;
+    fn fn_sync_with_google(&self, add: bool, name: String, date_time: String);
 }
 
-pub type IsabellePluginRegisterFn = fn(
-    api: &PluginApi);
-
-unsafe impl Send for PluginApi {}
-
+pub trait PluginPoolApi {
+    fn register(&mut self, plugin: Box<dyn Plugin>);
+}

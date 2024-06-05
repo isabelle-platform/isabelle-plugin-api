@@ -29,13 +29,19 @@ use log::info;
 #[repr(C)]
 /// Plugin pool structure
 pub struct PluginPool {
+    plugins: Vec<Box<dyn Plugin>>,
 }
 
+impl PluginPoolApi for PluginPool {
+    fn register(&mut self, plugin: Box<dyn Plugin>) {
+        self.plugins.push(plugin);
+    }
+}
 
 impl PluginPool {
 
     /// Load plugins from the given path, pass the API to them
-    pub fn load_plugins(&self, api: &PluginApi, path: &str) {
+    pub fn load_plugins(&mut self, path: &str) {
         let paths = fs::read_dir(path).unwrap();
         info!("Loading plugins from {}", path);
         for path in paths {
@@ -49,10 +55,10 @@ impl PluginPool {
                     match Library::new(file_name.clone()) {
                         Ok(lib) => {
                             info!("Library loaded");
-                            match lib.get::<Symbol<IsabellePluginRegisterFn>>(b"register") {
+                            match lib.get::<Symbol<unsafe extern "C" fn(&mut dyn PluginPoolApi) -> ()>>(b"register") {
                                 Ok(func) => {
                                     info!("Registering");
-                                    func(api);
+                                    func(self);
                                     info!("Registration done");
                                 }
                                 Err(e) => {
