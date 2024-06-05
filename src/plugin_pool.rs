@@ -66,7 +66,8 @@ impl PluginPool {
                         .to_string();
                     info!("Loading library {}", full);
                     match Library::new(file_name.clone()) {
-                        Ok(lib) => {
+                        Ok(l) => {
+                            let lib = Box::leak(Box::new(l));
                             info!("Library loaded");
                             match lib
                                 .get::<Symbol<unsafe extern "C" fn(&mut dyn PluginPoolApi) -> ()>>(
