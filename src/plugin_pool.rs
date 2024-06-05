@@ -29,7 +29,7 @@ use log::info;
 #[repr(C)]
 /// Plugin pool structure
 pub struct PluginPool {
-    plugins: Vec<Box<dyn Plugin>>,
+    pub plugins: Vec<Box<dyn Plugin>>,
 }
 
 impl PluginPoolApi for PluginPool {
