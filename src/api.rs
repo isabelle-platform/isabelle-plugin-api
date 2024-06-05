@@ -39,6 +39,7 @@ pub enum WebResponse {
 }
 
 pub trait Plugin : Send {
+    fn ping_test(&mut self);
     fn item_pre_edit_hook(&mut self,
         api: &Box<dyn PluginApi>,
         hndl: &str,
@@ -86,12 +87,12 @@ pub trait Plugin : Send {
         user: &Option<Item>,
         query: &str,
         itm: &Item) -> WebResponse;
-    fn route_collection_read_hook(&mut self,
+    fn collection_read_hook(&mut self,
         api: &Box<dyn PluginApi>,
         hndl: &str,
         collection: &str,
         itm: &mut Item) -> bool;
-    fn route_call_otp_hook(&mut self,
+    fn call_otp_hook(&mut self,
         api: &Box<dyn PluginApi>,
         hndl: &str,
         itm: &Item);
@@ -112,7 +113,7 @@ pub trait PluginApi : Send {
     fn db_del_item(&self, collection: &str, id: u64) -> bool;
 
     fn globals_get_public_url(&self) -> String;
-    fn global_get_settings(&self) -> Item;
+    fn globals_get_settings(&self) -> Item;
 
     fn auth_check_role(&self, itm: &Option<Item>, role: &str) -> bool;
     fn auth_get_new_salt(&self) -> String;

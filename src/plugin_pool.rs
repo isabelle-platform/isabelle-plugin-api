@@ -74,4 +74,10 @@ impl PluginPool {
             }
         }
     }
+
+    pub fn ping_plugins(&mut self) {
+        for plugin in &mut self.plugins {
+            plugin.ping_test();
+        }
+    }
 }
