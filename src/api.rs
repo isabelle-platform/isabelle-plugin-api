@@ -40,7 +40,7 @@ pub enum WebResponse {
 
 pub trait Plugin : Send {
     fn item_pre_edit_hook(&mut self,
-        api: Box<&dyn PluginApi>,
+        api: &Box<dyn PluginApi>,
         hndl: &str,
         user: &Option<Item>,
         collection: &str,
@@ -49,13 +49,13 @@ pub trait Plugin : Send {
         del: bool,
         merge: bool) -> ProcessResult;
     fn item_post_edit_hook(&mut self,
-        api: Box<&dyn PluginApi>,
+        api: &Box<dyn PluginApi>,
         hndl: &str,
         collection: &str,
         id: u64,
         del: bool);
     fn item_auth_hook(&mut self,
-        api: Box<&dyn PluginApi>,
+        api: &Box<dyn PluginApi>,
         hndl: &str,
         user: &Option<Item>,
         collection: &str,
@@ -63,7 +63,7 @@ pub trait Plugin : Send {
         new_item: Option<Item>,
         del: bool) -> bool;
     fn item_list_filter_hook(&mut self,
-        api: Box<&dyn PluginApi>,
+        api: &Box<dyn PluginApi>,
         hndl: &str,
         user: &Option<Item>,
         collection: &str,
@@ -71,28 +71,28 @@ pub trait Plugin : Send {
         map: &mut HashMap<u64, Item>);
 
     fn route_url_hook(&mut self,
-        api: Box<&dyn PluginApi>,
+        api: &Box<dyn PluginApi>,
         hndl: &str,
         user: &Option<Item>,
         query: &str) -> WebResponse;
     fn route_unprotected_url_hook(&mut self,
-        api: Box<&dyn PluginApi>,
+        api: &Box<dyn PluginApi>,
         hndl: &str,
         user: &Option<Item>,
         query: &str) -> WebResponse;
     fn route_unprotected_url_post_hook(&mut self,
-        api: Box<&dyn PluginApi>,
+        api: &Box<dyn PluginApi>,
         hndl: &str,
         user: &Option<Item>,
         query: &str,
         itm: &Item) -> WebResponse;
     fn route_collection_read_hook(&mut self,
-        api: Box<&dyn PluginApi>,
+        api: &Box<dyn PluginApi>,
         hndl: &str,
         collection: &str,
         itm: &mut Item) -> bool;
     fn route_call_otp_hook(&mut self,
-        api: Box<&dyn PluginApi>,
+        api: &Box<dyn PluginApi>,
         hndl: &str,
         itm: &Item);
 }
