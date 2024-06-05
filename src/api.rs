@@ -37,7 +37,7 @@ pub enum WebResponse {
     Forbidden,
 }
 
-pub trait Plugin {
+pub trait Plugin : Send {
     fn item_pre_edit_hook(&mut self,
         api: Box<&dyn PluginApi>,
         user: &Option<Item>,
@@ -87,7 +87,7 @@ pub trait Plugin {
         itm: &Item);
 }
 
-pub trait PluginApi {
+pub trait PluginApi : Send {
     fn db_get_all_items(&self, collection: &str, sort_key: &str, filter: &str)
         -> ListResult;
     fn db_get_items(&self, collection: &str,
@@ -114,6 +114,6 @@ pub trait PluginApi {
     fn fn_sync_with_google(&self, add: bool, name: String, date_time: String);
 }
 
-pub trait PluginPoolApi {
+pub trait PluginPoolApi : Send {
     fn register(&mut self, plugin: Box<dyn Plugin>);
 }
