@@ -39,7 +39,7 @@ pub enum WebResponse {
 
 pub trait Plugin {
     fn item_pre_edit_hook(&mut self,
-        api: Box<dyn PluginApi>,
+        api: Box<&dyn PluginApi>,
         user: &Option<Item>,
         collection: &str,
         old_itm: Option<Item>,
@@ -47,43 +47,43 @@ pub trait Plugin {
         del: bool,
         merge: bool) -> ProcessResult;
     fn item_post_edit_hook(&mut self,
-        api: Box<dyn PluginApi>,
+        api: Box<&dyn PluginApi>,
         collection: &str,
         id: u64,
         del: bool);
     fn item_auth_hook(&mut self,
-        api: Box<dyn PluginApi>,
+        api: Box<&dyn PluginApi>,
         user: &Option<Item>,
         collection: &str,
         id: u64,
         new_item: Option<Item>,
         del: bool) -> bool;
     fn item_list_filter_hook(&mut self,
-        api: Box<dyn PluginApi>,
+        api: Box<&dyn PluginApi>,
         user: &Option<Item>,
         collection: &str,
         context: &str,
         map: &mut HashMap<u64, Item>);
 
     fn route_url_hook(&mut self,
-        api: Box<dyn PluginApi>,
+        api: Box<&dyn PluginApi>,
         user: &Option<Item>,
         query: &str) -> WebResponse;
     fn route_unprotected_url_hook(&mut self,
-        api: Box<dyn PluginApi>,
+        api: Box<&dyn PluginApi>,
         user: &Option<Item>,
         query: &str) -> WebResponse;
     fn route_unprotected_url_post_hook(&mut self,
-        api: Box<dyn PluginApi>,
+        api: Box<&dyn PluginApi>,
         user: &Option<Item>,
         query: &str,
         itm: &Item) -> WebResponse;
     fn route_collection_read_hook(&mut self,
-        api: Box<dyn PluginApi>,
+        api: Box<&dyn PluginApi>,
         collection: &str,
         itm: &mut Item) -> bool;
     fn route_call_otp_hook(&mut self,
-        api: Box<dyn PluginApi>,
+        api: Box<&dyn PluginApi>,
         itm: &Item);
 }
 
