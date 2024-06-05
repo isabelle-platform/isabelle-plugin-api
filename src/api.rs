@@ -21,10 +21,10 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-use std::collections::HashMap;
 use isabelle_dm::data_model::item::Item;
 use isabelle_dm::data_model::list_result::ListResult;
 use isabelle_dm::data_model::process_result::ProcessResult;
+use std::collections::HashMap;
 
 #[repr(C)]
 /// Canonical web responses
@@ -38,9 +38,10 @@ pub enum WebResponse {
     NotImplemented,
 }
 
-pub trait Plugin : Send {
+pub trait Plugin: Send {
     fn ping_test(&mut self);
-    fn item_pre_edit_hook(&mut self,
+    fn item_pre_edit_hook(
+        &mut self,
         api: &Box<dyn PluginApi>,
         hndl: &str,
         user: &Option<Item>,
@@ -48,66 +49,80 @@ pub trait Plugin : Send {
         old_itm: Option<Item>,
         itm: &mut Item,
         del: bool,
-        merge: bool) -> ProcessResult;
-    fn item_post_edit_hook(&mut self,
+        merge: bool,
+    ) -> ProcessResult;
+    fn item_post_edit_hook(
+        &mut self,
         api: &Box<dyn PluginApi>,
         hndl: &str,
         collection: &str,
         id: u64,
-        del: bool);
-    fn item_auth_hook(&mut self,
+        del: bool,
+    );
+    fn item_auth_hook(
+        &mut self,
         api: &Box<dyn PluginApi>,
         hndl: &str,
         user: &Option<Item>,
         collection: &str,
         id: u64,
         new_item: Option<Item>,
-        del: bool) -> bool;
-    fn item_list_filter_hook(&mut self,
+        del: bool,
+    ) -> bool;
+    fn item_list_filter_hook(
+        &mut self,
         api: &Box<dyn PluginApi>,
         hndl: &str,
         user: &Option<Item>,
         collection: &str,
         context: &str,
-        map: &mut HashMap<u64, Item>);
+        map: &mut HashMap<u64, Item>,
+    );
 
-    fn route_url_hook(&mut self,
-        api: &Box<dyn PluginApi>,
-        hndl: &str,
-        user: &Option<Item>,
-        query: &str) -> WebResponse;
-    fn route_unprotected_url_hook(&mut self,
-        api: &Box<dyn PluginApi>,
-        hndl: &str,
-        user: &Option<Item>,
-        query: &str) -> WebResponse;
-    fn route_unprotected_url_post_hook(&mut self,
+    fn route_url_hook(
+        &mut self,
         api: &Box<dyn PluginApi>,
         hndl: &str,
         user: &Option<Item>,
         query: &str,
-        itm: &Item) -> WebResponse;
-    fn collection_read_hook(&mut self,
+    ) -> WebResponse;
+    fn route_unprotected_url_hook(
+        &mut self,
+        api: &Box<dyn PluginApi>,
+        hndl: &str,
+        user: &Option<Item>,
+        query: &str,
+    ) -> WebResponse;
+    fn route_unprotected_url_post_hook(
+        &mut self,
+        api: &Box<dyn PluginApi>,
+        hndl: &str,
+        user: &Option<Item>,
+        query: &str,
+        itm: &Item,
+    ) -> WebResponse;
+    fn collection_read_hook(
+        &mut self,
         api: &Box<dyn PluginApi>,
         hndl: &str,
         collection: &str,
-        itm: &mut Item) -> bool;
-    fn call_otp_hook(&mut self,
-        api: &Box<dyn PluginApi>,
-        hndl: &str,
-        itm: &Item);
+        itm: &mut Item,
+    ) -> bool;
+    fn call_otp_hook(&mut self, api: &Box<dyn PluginApi>, hndl: &str, itm: &Item);
 }
 
-pub trait PluginApi : Send {
-    fn db_get_all_items(&self, collection: &str, sort_key: &str, filter: &str)
-        -> ListResult;
-    fn db_get_items(&self, collection: &str,
+pub trait PluginApi: Send {
+    fn db_get_all_items(&self, collection: &str, sort_key: &str, filter: &str) -> ListResult;
+    fn db_get_items(
+        &self,
+        collection: &str,
         id_min: u64,
         id_max: u64,
         sort_key: &str,
         filter: &str,
         skip: u64,
-        limit: u64) -> ListResult;
+        limit: u64,
+    ) -> ListResult;
     fn db_get_item(&self, collection: &str, id: u64) -> Option<Item>;
     fn db_set_item(&self, collection: &str, itm: &Item, merge: bool);
     fn db_del_item(&self, collection: &str, id: u64) -> bool;
@@ -125,6 +140,6 @@ pub trait PluginApi : Send {
     fn fn_sync_with_google(&self, add: bool, name: String, date_time: String);
 }
 
-pub trait PluginPoolApi : Send {
+pub trait PluginPoolApi: Send {
     fn register(&mut self, plugin: Box<dyn Plugin>);
 }
