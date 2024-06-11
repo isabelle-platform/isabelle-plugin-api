@@ -86,6 +86,17 @@ pub trait Plugin: Send {
         user: &Option<Item>,
         query: &str,
     ) -> WebResponse;
+    fn route_url_post_hook(
+        &mut self,
+        _api: &Box<dyn PluginApi>,
+        _hndl: &str,
+        _user: &Option<Item>,
+        _query: &str,
+        _itm: &Item,
+    ) -> WebResponse
+    {
+        return WebResponse::NotImplemented;
+    }
     fn route_unprotected_url_hook(
         &mut self,
         api: &Box<dyn PluginApi>,
