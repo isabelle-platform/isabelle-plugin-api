@@ -93,8 +93,7 @@ pub trait Plugin: Send {
         _user: &Option<Item>,
         _query: &str,
         _itm: &Item,
-    ) -> WebResponse
-    {
+    ) -> WebResponse {
         return WebResponse::NotImplemented;
     }
     fn route_unprotected_url_hook(
