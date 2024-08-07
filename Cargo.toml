@@ -1,9 +1,9 @@
 [package]
 name = "isabelle-plugin-api"
-version = "1.0.10"
+version = "1.1.0"
 edition = "2021"
 
 [dependencies]
-isabelle-dm = { "git" = "https://github.com/isabelle-platform/isabelle-dm" }
+isabelle-dm = { "git" = "https://github.com/isabelle-platform/isabelle-dm", version = "1.1.0" }
 libloading = "0.8.3"
 log = "0.4.0"
