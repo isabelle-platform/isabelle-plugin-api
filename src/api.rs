@@ -119,9 +119,7 @@ pub trait Plugin: Send {
         itm: &mut Item,
     ) -> bool;
     fn call_otp_hook(&mut self, api: &Box<dyn PluginApi>, hndl: &str, itm: &Item);
-    fn call_periodic_job_hook(&mut self, _api: &Box<dyn PluginApi>, _timing: &str)
-    {
-    }
+    fn call_periodic_job_hook(&mut self, _api: &Box<dyn PluginApi>, _timing: &str) {}
 }
 
 pub trait PluginApi: Send {
