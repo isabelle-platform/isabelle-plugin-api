@@ -21,10 +21,10 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+use isabelle_dm::data_model::data_object_action::DataObjectAction;
 use isabelle_dm::data_model::item::Item;
 use isabelle_dm::data_model::list_result::ListResult;
 use isabelle_dm::data_model::process_result::ProcessResult;
-use isabelle_dm::data_model::data_object_action::DataObjectAction;
 use std::collections::HashMap;
 
 #[repr(C)]
