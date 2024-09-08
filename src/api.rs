@@ -24,6 +24,7 @@
 use isabelle_dm::data_model::item::Item;
 use isabelle_dm::data_model::list_result::ListResult;
 use isabelle_dm::data_model::process_result::ProcessResult;
+use isabelle_dm::data_model::data_object_action::DataObjectAction;
 use std::collections::HashMap;
 
 #[repr(C)]
@@ -48,7 +49,7 @@ pub trait Plugin: Send {
         collection: &str,
         old_itm: Option<Item>,
         itm: &mut Item,
-        del: bool,
+        action: DataObjectAction,
         merge: bool,
     ) -> ProcessResult;
     fn item_post_edit_hook(
@@ -56,8 +57,9 @@ pub trait Plugin: Send {
         api: &Box<dyn PluginApi>,
         hndl: &str,
         collection: &str,
+        old_itm: Option<Item>,
         id: u64,
-        del: bool,
+        action: DataObjectAction,
     );
     fn item_auth_hook(
         &mut self,
