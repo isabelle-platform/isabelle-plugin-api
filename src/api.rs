@@ -26,6 +26,7 @@ use isabelle_dm::data_model::item::Item;
 use isabelle_dm::data_model::list_result::ListResult;
 use isabelle_dm::data_model::process_result::ProcessResult;
 use std::collections::HashMap;
+use std::any::Any;
 
 #[repr(C)]
 /// Canonical web responses
@@ -151,6 +152,9 @@ pub trait PluginApi: Send {
     fn fn_send_email(&self, to: &str, subject: &str, body: &str);
     fn fn_init_google(&self) -> String;
     fn fn_sync_with_google(&self, add: bool, name: String, date_time: String);
+
+    fn fn_get_state(&self, hndl: &str) -> &Option<Box<dyn Any + Send>>;
+    fn fn_set_state(&self, hndl: &str, value: Option<Box<dyn Any + Send>>);
 }
 
 pub trait PluginPoolApi: Send {
