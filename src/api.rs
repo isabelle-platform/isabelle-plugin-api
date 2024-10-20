@@ -153,7 +153,7 @@ pub trait PluginApi: Send {
     fn fn_init_google(&self) -> String;
     fn fn_sync_with_google(&self, add: bool, name: String, date_time: String);
 
-    fn fn_get_state(&self, hndl: &str) -> &Option<Box<dyn Any + Send>>;
+    fn fn_get_state(&self, hndl: &str) -> &mut Option<Box<dyn Any + Send>>;
     fn fn_set_state(&self, hndl: &str, value: Option<Box<dyn Any + Send>>);
 }
 
