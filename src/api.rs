@@ -88,6 +88,7 @@ pub trait Plugin: Send {
         _user: &Option<Item>,
         _collection: &str,
         _context: &str,
+        _filter_type: &str,
     ) -> String {
         return "".to_string();
     }
