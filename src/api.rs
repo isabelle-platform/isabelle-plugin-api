@@ -25,8 +25,8 @@ use isabelle_dm::data_model::data_object_action::DataObjectAction;
 use isabelle_dm::data_model::item::Item;
 use isabelle_dm::data_model::list_result::ListResult;
 use isabelle_dm::data_model::process_result::ProcessResult;
-use std::collections::HashMap;
 use std::any::Any;
+use std::collections::HashMap;
 
 #[repr(C)]
 /// Canonical web responses
