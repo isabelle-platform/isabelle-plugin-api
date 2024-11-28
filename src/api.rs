@@ -81,6 +81,16 @@ pub trait Plugin: Send {
         context: &str,
         map: &mut HashMap<u64, Item>,
     );
+    fn item_list_db_filter_hook(
+        &mut self,
+        _api: &Box<dyn PluginApi>,
+        _hndl: &str,
+        _user: &Option<Item>,
+        _collection: &str,
+        _context: &str,
+    ) -> String {
+        return "".to_string();
+    }
 
     fn route_url_hook(
         &mut self,
