@@ -33,6 +33,7 @@ use std::collections::HashMap;
 pub enum WebResponse {
     Ok,
     OkData(String),
+    OkFile(String, Vec<u8>),
     NotFound,
     Unauthorized,
     BadRequest,
