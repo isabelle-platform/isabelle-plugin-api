@@ -34,6 +34,7 @@ pub enum WebResponse {
     Ok,
     OkData(String),
     OkFile(String, Vec<u8>),
+    OkFilePath(String, String),
     NotFound,
     Unauthorized,
     BadRequest,
