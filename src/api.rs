@@ -174,6 +174,7 @@ pub trait PluginApi: Send {
     fn auth_verify_password(&self, pw: &str, pw_hash: &str) -> bool;
 
     fn auth_login(&self, login: &str, password: &str) -> ProcessResult;
+    fn auth_logout(&self, login: &str) -> ProcessResult;
     fn auth_register(&self, login: &str, email: &str) -> ProcessResult;
     fn auth_gen_otp(&self, login: &str) -> ProcessResult;
 
