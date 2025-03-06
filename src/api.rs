@@ -137,7 +137,7 @@ pub trait Plugin: Send {
         _method: &str,
         _user: &Option<Item>,
         _query: &str,
-        _payload: web::Json<Value>) -> WebResponse {
+        _payload: &Option<web::Json<Value>>) -> WebResponse {
         return WebResponse::NotImplemented;
     }
 
