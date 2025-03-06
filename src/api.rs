@@ -132,12 +132,15 @@ pub trait Plugin: Send {
 
     fn route_rest_hook(
         &mut self,
-        api: &Box<dyn PluginApi>,
-        hndl: &str,
-        method: &str,
-        user: &Option<Item>,
-        query: &str,
-        payload: web::Json<Value>) -> WebResponse;
+        _api: &Box<dyn PluginApi>,
+        _hndl: &str,
+        _method: &str,
+        _user: &Option<Item>,
+        _query: &str,
+        _payload: web::Json<Value>) -> WebResponse {
+        return WebResponse::NotImplemented;
+    }
+
     fn collection_read_hook(
         &mut self,
         api: &Box<dyn PluginApi>,
