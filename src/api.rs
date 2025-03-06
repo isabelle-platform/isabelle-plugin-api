@@ -42,6 +42,8 @@ pub enum WebResponse {
     BadRequest,
     Forbidden,
     NotImplemented,
+    Login(String),
+    Logout,
 }
 
 pub trait Plugin: Send {
