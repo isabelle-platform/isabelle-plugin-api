@@ -27,6 +27,8 @@ use isabelle_dm::data_model::list_result::ListResult;
 use isabelle_dm::data_model::process_result::ProcessResult;
 use std::any::Any;
 use std::collections::HashMap;
+use actix_web::web;
+use serde_json::Value;
 
 #[repr(C)]
 /// Canonical web responses
@@ -127,6 +129,15 @@ pub trait Plugin: Send {
         query: &str,
         itm: &Item,
     ) -> WebResponse;
+
+    fn route_rest_hook(
+        &mut self,
+        api: &Box<dyn PluginApi>,
+        hndl: &str,
+        method: &str,
+        user: &Option<Item>,
+        query: &str,
+        payload: web::Json<Value>) -> WebResponse;
     fn collection_read_hook(
         &mut self,
         api: &Box<dyn PluginApi>,
@@ -161,6 +172,10 @@ pub trait PluginApi: Send {
     fn auth_get_new_salt(&self) -> String;
     fn auth_get_password_hash(&self, pw: &str, salt: &str) -> String;
     fn auth_verify_password(&self, pw: &str, pw_hash: &str) -> bool;
+
+    fn auth_login(&self, login: &str, password: &str) -> ProcessResult;
+    fn auth_register(&self, login: &str, email: &str) -> ProcessResult;
+    fn auth_gen_otp(&self, login: &str) -> ProcessResult;
 
     fn fn_send_email(&self, to: &str, subject: &str, body: &str);
     fn fn_init_google(&self) -> String;
