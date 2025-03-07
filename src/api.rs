@@ -28,7 +28,6 @@ use isabelle_dm::data_model::process_result::ProcessResult;
 use std::any::Any;
 use std::collections::HashMap;
 use actix_web::web;
-use serde_json::Value;
 
 #[repr(C)]
 /// Canonical web responses
@@ -139,7 +138,7 @@ pub trait Plugin: Send {
         _method: &str,
         _user: &Option<Item>,
         _query: &str,
-        _payload: &Option<web::Json<Value>>) -> WebResponse {
+        _payload: web::Payload) -> WebResponse {
         return WebResponse::NotImplemented;
     }
 
