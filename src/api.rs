@@ -21,7 +21,6 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-use actix_web::web;
 use isabelle_dm::data_model::data_object_action::DataObjectAction;
 use isabelle_dm::data_model::item::Item;
 use isabelle_dm::data_model::list_result::ListResult;
@@ -138,7 +137,7 @@ pub trait Plugin: Send {
         _method: &str,
         _user: &Option<Item>,
         _query: &str,
-        _payload: &web::Payload,
+        _payload: &str,
     ) -> WebResponse {
         return WebResponse::NotImplemented;
     }
