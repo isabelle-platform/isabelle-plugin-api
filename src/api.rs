@@ -166,7 +166,7 @@ pub trait PluginApi: Send {
         limit: u64,
     ) -> ListResult;
     fn db_get_item(&self, collection: &str, id: u64) -> Option<Item>;
-    fn db_set_item(&self, collection: &str, itm: &Item, merge: bool);
+    fn db_set_item(&self, collection: &str, itm: &Item, merge: bool) -> u64;
     fn db_del_item(&self, collection: &str, id: u64) -> bool;
 
     fn globals_get_public_url(&self) -> String;
