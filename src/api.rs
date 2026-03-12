@@ -171,6 +171,7 @@ pub trait PluginApi: Send {
 
     fn globals_get_public_url(&self) -> String;
     fn globals_get_settings(&self) -> Item;
+    fn globals_set_settings(&self, itm: &Item);
 
     fn auth_check_role(&self, itm: &Option<Item>, role: &str) -> bool;
     fn auth_get_new_salt(&self) -> String;
