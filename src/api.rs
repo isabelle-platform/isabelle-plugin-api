@@ -189,6 +189,42 @@ pub trait PluginApi: Send {
 
     fn fn_get_state(&self, hndl: &str) -> &mut Option<Box<dyn Any + Send>>;
     fn fn_set_state(&self, hndl: &str, value: Option<Box<dyn Any + Send>>);
+
+    /// Read a secret by id. Returns the raw Item with all string values
+    /// intact. Plugins are part of the trusted in-process boundary, so
+    /// this is the internal API counterpart to the masked HTTP `/secret/get`.
+    /// Default impl returns None for hosts that have no secret store.
+    fn secret_get(&self, _id: u64) -> Option<Item> {
+        None
+    }
+
+    /// Read a secret by its strs["name"]. Default impl returns None.
+    fn secret_get_by_name(&self, _name: &str) -> Option<Item> {
+        None
+    }
+
+    /// (id, name) pairs of all secrets, sorted by name. Default impl is empty.
+    fn secret_list(&self) -> Vec<(u64, String)> {
+        Vec::new()
+    }
+
+    /// Insert or update a secret. Same semantics as `db_set_item`:
+    /// * `merge=true` merges the incoming Item into the existing entry;
+    /// * `item.id == u64::MAX` allocates a fresh id;
+    /// * `strs["name"]` must be non-empty (after merge) and unique;
+    /// * any `strs[k]` whose key starts with "secret" and equals
+    ///   `"<hidden>"` keeps the existing value (or is dropped on insert).
+    /// Returns the assigned id on success or an error message on failure.
+    /// Default impl is a no-op error.
+    fn secret_set(&self, _item: &Item, _merge: bool) -> Result<u64, String> {
+        Err("secret_set not implemented".to_string())
+    }
+
+    /// Delete a secret by id. Returns true if a secret was removed.
+    /// Default impl is a no-op.
+    fn secret_del(&self, _id: u64) -> bool {
+        false
+    }
 }
 
 pub trait PluginPoolApi: Send {
