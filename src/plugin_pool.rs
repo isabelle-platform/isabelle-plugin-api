@@ -65,7 +65,7 @@ impl PluginPool {
                         .to_string_lossy()
                         .to_string();
                     info!("Loading library {}", full);
-                    match Library::new(file_name.clone()) {
+                    match Library::new(&full) {
                         Ok(l) => {
                             let lib = Box::leak(Box::new(l));
                             info!("Library loaded");
