@@ -65,8 +65,12 @@ fn load_plugins_with_empty_directory_is_noop() {
     let mut pool = PluginPool {
         plugins: Vec::new(),
     };
-    pool.load_plugins(dir.to_str().unwrap());
+    let result = pool.load_plugins(dir.to_str().unwrap());
     assert_eq!(pool.plugins.len(), 0);
+    assert_eq!(result.considered, 0);
+    assert_eq!(result.loaded, 0);
+    assert_eq!(result.failed(), 0);
+    assert!(result.is_ok());
 
     let _ = fs::remove_dir_all(&dir);
 }
@@ -86,8 +90,68 @@ fn load_plugins_skips_unrelated_files() {
     let mut pool = PluginPool {
         plugins: Vec::new(),
     };
-    pool.load_plugins(dir.to_str().unwrap());
+    let result = pool.load_plugins(dir.to_str().unwrap());
     assert_eq!(pool.plugins.len(), 0);
+    assert_eq!(result.considered, 0);
+    assert_eq!(result.loaded, 0);
+    assert!(result.is_ok());
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn load_plugins_reports_missing_directory() {
+    let dir = std::env::temp_dir().join(format!(
+        "isabelle-plugin-api-test-missing-{}",
+        std::process::id()
+    ));
+    let _ = fs::remove_dir_all(&dir);
+
+    let mut pool = PluginPool {
+        plugins: Vec::new(),
+    };
+    let result = pool.load_plugins(dir.to_str().unwrap());
+    assert_eq!(pool.plugins.len(), 0);
+    assert_eq!(result.considered, 0);
+    assert_eq!(result.loaded, 0);
+    assert_eq!(result.failed(), 1);
+    assert!(!result.is_ok());
+    assert_eq!(result.failures[0].path, dir.to_str().unwrap());
+    assert!(result.failures[0].error.contains("Failed to read"));
+}
+
+#[test]
+fn load_plugins_reports_failure_for_invalid_library() {
+    let dir = std::env::temp_dir().join(format!(
+        "isabelle-plugin-api-test-bad-lib-{}",
+        std::process::id()
+    ));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).unwrap();
+    // A file that matches the prefix but is not a valid shared library.
+    let bogus = dir.join("libisabelle_plugin_bogus.so");
+    fs::write(&bogus, b"not a real shared library").unwrap();
+
+    let mut pool = PluginPool {
+        plugins: Vec::new(),
+    };
+    let result = pool.load_plugins(dir.to_str().unwrap());
+    assert_eq!(pool.plugins.len(), 0);
+    assert_eq!(result.considered, 1);
+    assert_eq!(result.loaded, 0);
+    assert_eq!(result.failed(), 1);
+    assert!(!result.is_ok());
+    let failure = &result.failures[0];
+    assert!(
+        failure.path.ends_with("libisabelle_plugin_bogus.so"),
+        "unexpected failure path: {}",
+        failure.path
+    );
+    assert!(
+        failure.error.contains("Failed to load plugin library"),
+        "unexpected failure message: {}",
+        failure.error
+    );
 
     let _ = fs::remove_dir_all(&dir);
 }
