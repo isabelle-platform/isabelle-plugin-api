@@ -249,6 +249,15 @@ pub enum PluginHookMessage {
         user: Option<Item>,
         query: String,
         payload: String,
+        /// Request headers: names lowercased, credential-bearing ones removed
+        /// by the host. Duplicated names collapse to the last value seen.
+        ///
+        /// This is what makes a signed request verifiable. A caller that signs
+        /// its body — a payment provider's webhook is the usual one — puts the
+        /// signature in a header, and a hook that can see the body but not the
+        /// header can only choose between trusting an unauthenticated POST and
+        /// refusing every delivery.
+        headers: HashMap<String, String>,
         reply: oneshot::Sender<WebResponse>,
     },
 
