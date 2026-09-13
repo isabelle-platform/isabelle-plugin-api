@@ -69,7 +69,8 @@ use isabelle_dm::data_model::data_object_action::DataObjectAction;
 use isabelle_dm::data_model::item::Item;
 use isabelle_dm::data_model::list_result::ListResult;
 use isabelle_dm::data_model::process_result::ProcessResult;
-use std::collections::HashMap;
+use serde_json::Value;
+use std::collections::{BTreeMap, HashMap};
 use tokio::sync::{mpsc, oneshot};
 
 use crate::api::WebResponse;
@@ -395,6 +396,20 @@ pub enum CoreMessage {
         id: u64,
         reply: oneshot::Sender<Option<Item>>,
     },
+
+    // --- Features ---
+    /// What the deployment is allowed to do, as declared in `features.js`
+    /// beside its settings: feature name → the free-form descriptor the
+    /// feature carries. Core reads that file at startup and never writes it,
+    /// so the answer is the same for the life of the process and there is no
+    /// message here that sets one — a plugin cannot grant itself a feature.
+    ///
+    /// The whole document comes back in one reply rather than a lookup per
+    /// name, because it is a handful of entries read from a file and because
+    /// a plugin that asks about one feature usually asks about several.
+    FeaturesGetAll {
+        reply: oneshot::Sender<BTreeMap<String, Value>>,
+    },
 }
 
 // ---------------------------------------------------------------------------
@@ -657,6 +672,42 @@ impl CoreHandle {
         self.request(|reply| CoreMessage::SecretGet { id, reply })
             .await
             .flatten()
+    }
+
+    // --- Features ---
+    /// Everything `features.js` declares: name → descriptor.
+    ///
+    /// An empty map means the deployment declares no features — which is
+    /// also what a core too old to answer this message, or one shutting
+    /// down, produces. That is the safe reading in all three cases: a
+    /// feature nobody granted is not available.
+    pub async fn features_all(&self) -> BTreeMap<String, Value> {
+        self.request(|reply| CoreMessage::FeaturesGetAll { reply })
+            .await
+            .unwrap_or_default()
+    }
+
+    /// The declared feature names, sorted.
+    pub async fn features_list(&self) -> Vec<String> {
+        self.features_all().await.into_keys().collect()
+    }
+
+    /// One feature's descriptor, exactly as the file spells it.
+    ///
+    /// `None` means the feature is not declared. A declared feature whose
+    /// descriptor is `null` answers `Some(Value::Null)`: the file said
+    /// something about it, and what it said was nothing in particular.
+    pub async fn features_get(&self, name: &str) -> Option<Value> {
+        self.features_all().await.remove(name)
+    }
+
+    /// Whether a feature is declared at all.
+    ///
+    /// The question most callers actually have, and the one place where
+    /// "not declared" and "declared as `null`" must not be confused — hence
+    /// a method rather than `features_get(..).is_some()` at every call site.
+    pub async fn features_has(&self, name: &str) -> bool {
+        self.features_all().await.contains_key(name)
     }
 }
 

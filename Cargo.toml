@@ -1,6 +1,6 @@
 [package]
 name = "isabelle-plugin-api"
-version = "1.25.0"
+version = "1.26.0"
 edition = "2021"
 
 [dependencies]
@@ -11,3 +11,8 @@ log = "0.4.0"
 serde_json = "1.0.96"
 # Required for the actor-model channels (mpsc + oneshot) in `actor` module.
 tokio = { version = "1.37", features = ["sync"] }
+
+[dev-dependencies]
+# The runtime the actor tests drive `CoreHandle` on. The crate itself needs
+# only tokio's channels, so the macros and scheduler stay dev-only.
+tokio = { version = "1.37", features = ["sync", "rt", "macros"] }
