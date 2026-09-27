@@ -396,6 +396,11 @@ pub enum CoreMessage {
         id: u64,
         reply: oneshot::Sender<Option<Item>>,
     },
+    /// Every stored secret by id and name, sorted by name. Names only: the
+    /// material is read with `SecretGet` by whoever needs it.
+    SecretList {
+        reply: oneshot::Sender<Vec<(u64, String)>>,
+    },
 
     // --- Features ---
     /// What the deployment is allowed to do, as declared in `features.js`
@@ -672,6 +677,12 @@ impl CoreHandle {
         self.request(|reply| CoreMessage::SecretGet { id, reply })
             .await
             .flatten()
+    }
+
+    /// Every stored secret as `(id, name)`, sorted by name. `None` from a
+    /// core that predates the message, which drops it unanswered.
+    pub async fn secret_list(&self) -> Option<Vec<(u64, String)>> {
+        self.request(|reply| CoreMessage::SecretList { reply }).await
     }
 
     // --- Features ---
