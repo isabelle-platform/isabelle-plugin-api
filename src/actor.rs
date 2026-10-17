@@ -401,6 +401,19 @@ pub enum CoreMessage {
     SecretList {
         reply: oneshot::Sender<Vec<(u64, String)>>,
     },
+    /// Store a secret in the system's own name space (`global.`), replacing
+    /// whatever is there under that name. That space is closed to the HTTP
+    /// secret endpoints, so an entry in it is one only server code wrote.
+    /// Any other name is refused.
+    SystemSecretSet {
+        item: Item,
+        reply: oneshot::Sender<Result<(), String>>,
+    },
+    /// Remove the system secret of this name. `Ok(false)`: there was none.
+    SystemSecretDel {
+        name: String,
+        reply: oneshot::Sender<Result<bool, String>>,
+    },
 
     // --- Features ---
     /// What the deployment is allowed to do, as declared in `features.js`
@@ -683,6 +696,22 @@ impl CoreHandle {
     /// core that predates the message, which drops it unanswered.
     pub async fn secret_list(&self) -> Option<Vec<(u64, String)>> {
         self.request(|reply| CoreMessage::SecretList { reply }).await
+    }
+
+    /// Store `item` as the system secret named by its `name`, which must be
+    /// in the `global.` space. Replaces the entry of that name, if any.
+    pub async fn system_secret_set(&self, item: Item) -> Result<(), String> {
+        self.request(|reply| CoreMessage::SystemSecretSet { item, reply })
+            .await
+            .unwrap_or_else(|| Err("this core cannot store system secrets".to_string()))
+    }
+
+    /// Remove the system secret `name`. `Ok(false)` when there was none.
+    pub async fn system_secret_del(&self, name: &str) -> Result<bool, String> {
+        let name = name.to_string();
+        self.request(|reply| CoreMessage::SystemSecretDel { name, reply })
+            .await
+            .unwrap_or_else(|| Err("this core cannot remove system secrets".to_string()))
     }
 
     // --- Features ---
