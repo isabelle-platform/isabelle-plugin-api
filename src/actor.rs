@@ -199,15 +199,10 @@ pub enum PluginHookMessage {
     },
 
     /// One-time password event.
-    Otp {
-        hndl: String,
-        item: Item,
-    },
+    Otp { hndl: String, item: Item },
 
     /// Periodic job — fired by core's scheduler. `timing` is "sec" or "min".
-    PeriodicJob {
-        timing: String,
-    },
+    PeriodicJob { timing: String },
 
     /// Authenticated GET-style route.
     RouteUrl {
@@ -263,9 +258,7 @@ pub enum PluginHookMessage {
     },
 
     /// Liveness probe at startup. Replaces the old `ping_test`.
-    Ping {
-        reply: oneshot::Sender<()>,
-    },
+    Ping { reply: oneshot::Sender<()> },
 
     /// Graceful shutdown. Plugin task should exit its loop.
     Shutdown,
@@ -452,10 +445,7 @@ impl CoreHandle {
     /// channel is closed, and plugins should treat that as a no-op rather
     /// than blowing up mid-request. Same sentinel choice as the old
     /// `PluginApi` impl (which returned defaults on failure).
-    async fn request<T>(
-        &self,
-        build: impl FnOnce(oneshot::Sender<T>) -> CoreMessage,
-    ) -> Option<T> {
+    async fn request<T>(&self, build: impl FnOnce(oneshot::Sender<T>) -> CoreMessage) -> Option<T> {
         let (rtx, rrx) = oneshot::channel();
         self.tx.send(build(rtx)).await.ok()?;
         rrx.await.ok()
@@ -695,7 +685,8 @@ impl CoreHandle {
     /// Every stored secret as `(id, name)`, sorted by name. `None` from a
     /// core that predates the message, which drops it unanswered.
     pub async fn secret_list(&self) -> Option<Vec<(u64, String)>> {
-        self.request(|reply| CoreMessage::SecretList { reply }).await
+        self.request(|reply| CoreMessage::SecretList { reply })
+            .await
     }
 
     /// Store `item` as the system secret named by its `name`, which must be

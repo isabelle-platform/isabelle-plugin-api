@@ -132,8 +132,7 @@ impl PluginPool {
                 Ok(p) => p.to_string_lossy().to_string(),
                 Err(e) => {
                     let path_str = entry_path.to_string_lossy().to_string();
-                    let msg =
-                        format!("Failed to canonicalize plugin path {}: {}", path_str, e);
+                    let msg = format!("Failed to canonicalize plugin path {}: {}", path_str, e);
                     error!("{}", msg);
                     result.failures.push(PluginLoadFailure {
                         path: path_str,
@@ -148,10 +147,9 @@ impl PluginPool {
                 match Library::new(&full) {
                     Ok(l) => {
                         let lib = Box::leak(Box::new(l));
-                        match lib
-                            .get::<Symbol<unsafe extern "C" fn(&mut dyn PluginPoolApi) -> ()>>(
-                                b"register",
-                            ) {
+                        match lib.get::<Symbol<unsafe extern "C" fn(&mut dyn PluginPoolApi) -> ()>>(
+                            b"register",
+                        ) {
                             Ok(func) => {
                                 func(self);
                                 result.loaded += 1;
@@ -190,11 +188,7 @@ impl PluginPool {
             result.failed()
         );
         if !result.is_ok() {
-            warn!(
-                "{} plugin(s) failed to load from {}",
-                result.failed(),
-                path
-            );
+            warn!("{} plugin(s) failed to load from {}", result.failed(), path);
         }
         result
     }
