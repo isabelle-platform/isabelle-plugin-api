@@ -365,10 +365,7 @@ pub struct DiskReport {
 /// is the one computation core and plugins agree on.
 pub fn plan_budget(total_bytes: u64, policy: &DiskPolicy) -> DiskBudget {
     let frac_reserve = (total_bytes as f64 * policy.root_reserve_frac) as u64;
-    let root_reserve = policy
-        .root_reserve_floor
-        .max(frac_reserve)
-        .min(total_bytes);
+    let root_reserve = policy.root_reserve_floor.max(frac_reserve).min(total_bytes);
     let usable = total_bytes.saturating_sub(root_reserve);
     let share = |f: f64| (usable as f64 * f) as u64;
     let job_scratch_total = share(policy.job_frac);
