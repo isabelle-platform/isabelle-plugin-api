@@ -274,6 +274,115 @@ pub struct CollectionReadReply {
 }
 
 // ---------------------------------------------------------------------------
+// Disk budget contract
+// ---------------------------------------------------------------------------
+//
+// How the data filesystem is shared between the host's reserve and the
+// platform's consumers (MongoDB, uploads, per-job scratch). The policy is
+// settable and the computed budget and live metrics are readable, all through
+// the CoreHandle methods below. Core owns the statvfs, the minute monitor and
+// the enforcement (see its `state::diskbudget`); these are the shared shapes
+// and the one pure computation both sides agree on.
+
+/// The settable disk-budget policy: the deployment's choice of how the data
+/// filesystem is shared. Fractions are of the *usable* space (total minus the
+/// reserve) and are independent ceilings, not a partition, so they need not sum
+/// to one.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DiskPolicy {
+    /// Keep at least this many bytes free for the host, whatever the fraction
+    /// works out to — a floor for small disks.
+    pub root_reserve_floor: u64,
+    /// …or this fraction of the total, whichever is larger — scales with big
+    /// disks.
+    pub root_reserve_frac: f64,
+    /// Ceiling for MongoDB, as a fraction of usable space.
+    pub mongo_frac: f64,
+    /// Ceiling for uploads, as a fraction of usable space.
+    pub upload_frac: f64,
+    /// Ceiling for all concurrent job scratch, as a fraction of usable space.
+    pub job_frac: f64,
+    /// Worst-case concurrent jobs the per-job cap must divide the job share by.
+    pub max_concurrent_jobs: u64,
+}
+
+impl Default for DiskPolicy {
+    /// The shipped defaults: keep 5 GiB or 10% free; of the rest, half to the
+    /// database, a third to uploads, a fifth to jobs; four jobs at once.
+    fn default() -> Self {
+        Self {
+            root_reserve_floor: 5 * 1024 * 1024 * 1024,
+            root_reserve_frac: 0.10,
+            mongo_frac: 0.50,
+            upload_frac: 0.30,
+            job_frac: 0.20,
+            max_concurrent_jobs: 4,
+        }
+    }
+}
+
+/// The caps a [`DiskPolicy`] works out to for a filesystem of a given size.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct DiskBudget {
+    /// Free space kept for the host; the disk is "low" at or below this.
+    pub root_reserve: u64,
+    /// Ceiling for MongoDB data.
+    pub mongo_cap: u64,
+    /// Ceiling for the uploads directory.
+    pub upload_cap: u64,
+    /// Ceiling for all concurrent job scratch together.
+    pub job_scratch_total: u64,
+    /// Ceiling for one job's scratch.
+    pub per_job_disk: u64,
+}
+
+/// Live measurement of the data filesystem, plus the current verdict the
+/// monitor maintains.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct DiskMetrics {
+    /// Total size of the filesystem.
+    pub total_bytes: u64,
+    /// Bytes available to the server right now.
+    pub avail_bytes: u64,
+    /// Whether available space is at or below the reserve (work is being shed).
+    pub disk_low: bool,
+}
+
+/// Everything a plugin needs to know about disk: what is measured now, the caps
+/// that follow, and the policy that produced them.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct DiskReport {
+    pub metrics: DiskMetrics,
+    pub budget: DiskBudget,
+    pub policy: DiskPolicy,
+}
+
+/// Compute the [`DiskBudget`] for a filesystem of `total_bytes` under `policy`.
+///
+/// Pure and total: the reserve is the larger of the floor and the fraction,
+/// clamped to the disk; the usable remainder is split by the fractions; the
+/// per-job cap divides the job share by the concurrency (never by zero). This
+/// is the one computation core and plugins agree on.
+pub fn plan_budget(total_bytes: u64, policy: &DiskPolicy) -> DiskBudget {
+    let frac_reserve = (total_bytes as f64 * policy.root_reserve_frac) as u64;
+    let root_reserve = policy
+        .root_reserve_floor
+        .max(frac_reserve)
+        .min(total_bytes);
+    let usable = total_bytes.saturating_sub(root_reserve);
+    let share = |f: f64| (usable as f64 * f) as u64;
+    let job_scratch_total = share(policy.job_frac);
+    let jobs = policy.max_concurrent_jobs.max(1);
+    DiskBudget {
+        root_reserve,
+        mongo_cap: share(policy.mongo_frac),
+        upload_cap: share(policy.upload_frac),
+        job_scratch_total,
+        per_job_disk: job_scratch_total / jobs,
+    }
+}
+
+// ---------------------------------------------------------------------------
 // plugin -> core messages
 // ---------------------------------------------------------------------------
 
@@ -329,6 +438,18 @@ pub enum CoreMessage {
     },
     GlobalsSetSettings {
         item: Item,
+    },
+    /// The disk situation: live metrics, the computed budget, and the active
+    /// policy (see [`DiskReport`]).
+    GlobalsGetDiskReport {
+        reply: oneshot::Sender<DiskReport>,
+    },
+    /// Replace the active disk-budget policy. The monitor uses the new one from
+    /// its next tick, and the change is persisted so it survives a restart.
+    /// Reply is whether it was accepted and stored.
+    GlobalsSetDiskPolicy {
+        policy: DiskPolicy,
+        reply: oneshot::Sender<bool>,
     },
 
     // --- Auth ---
@@ -553,6 +674,23 @@ impl CoreHandle {
             .tx
             .send(CoreMessage::GlobalsSetSettings { item: item.clone() })
             .await;
+    }
+
+    /// The deployment's disk situation: live metrics, the computed budget and
+    /// the active policy. On a channel error it is the all-zero default, whose
+    /// `disk_low` is false and whose caps are zero — the safe no-op for a
+    /// caller that uses it to size or gate work.
+    pub async fn globals_get_disk_report(&self) -> DiskReport {
+        self.request(|reply| CoreMessage::GlobalsGetDiskReport { reply })
+            .await
+            .unwrap_or_default()
+    }
+
+    /// Replace the active disk-budget policy; returns whether it was stored.
+    pub async fn globals_set_disk_policy(&self, policy: DiskPolicy) -> bool {
+        self.request(|reply| CoreMessage::GlobalsSetDiskPolicy { policy, reply })
+            .await
+            .unwrap_or(false)
     }
 
     // --- Auth ---
@@ -814,6 +952,43 @@ impl Default for PluginRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const GIB: u64 = 1024 * 1024 * 1024;
+
+    #[test]
+    fn plan_budget_reserves_the_larger_of_floor_and_fraction() {
+        let pol = DiskPolicy::default();
+        // 20 GiB: 10% = 2 GiB < 5 GiB floor → floor wins.
+        assert_eq!(plan_budget(20 * GIB, &pol).root_reserve, 5 * GIB);
+        // 200 GiB: 10% = 20 GiB > floor → fraction wins.
+        assert_eq!(plan_budget(200 * GIB, &pol).root_reserve, 20 * GIB);
+    }
+
+    #[test]
+    fn plan_budget_splits_usable_and_divides_per_job_by_concurrency() {
+        let pol = DiskPolicy::default();
+        let b = plan_budget(200 * GIB, &pol);
+        let usable = 180 * GIB; // 200 - 20 reserve
+        assert_eq!(b.mongo_cap, usable / 2);
+        assert_eq!(b.upload_cap, (usable as f64 * 0.30) as u64);
+        assert_eq!(b.job_scratch_total, (usable as f64 * 0.20) as u64);
+        assert_eq!(b.per_job_disk, b.job_scratch_total / 4);
+    }
+
+    #[test]
+    fn plan_budget_is_total_on_a_tiny_disk_and_never_divides_by_zero() {
+        // Smaller than the floor: the whole disk is the reserve, caps are zero.
+        let b = plan_budget(2 * GIB, &DiskPolicy::default());
+        assert_eq!(b.root_reserve, 2 * GIB);
+        assert_eq!(b.per_job_disk, 0);
+        // Zero concurrency is treated as one job.
+        let pol = DiskPolicy {
+            max_concurrent_jobs: 0,
+            ..DiskPolicy::default()
+        };
+        let b = plan_budget(200 * GIB, &pol);
+        assert_eq!(b.per_job_disk, b.job_scratch_total);
+    }
 
     #[test]
     fn pre_edit_reply_helpers_produce_correct_shape() {
