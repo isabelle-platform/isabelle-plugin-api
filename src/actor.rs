@@ -380,6 +380,54 @@ pub fn plan_budget(total_bytes: u64, policy: &DiskPolicy) -> DiskBudget {
 }
 
 // ---------------------------------------------------------------------------
+// Maintenance
+// ---------------------------------------------------------------------------
+
+/// Whether the installation takes new operations, as the core keeps it.
+///
+/// An update of an installation stops its service. So an update is asked
+/// for, and the core waits for a moment when no plugin has an operation
+/// open, closes in that same step, and reopens when told or after a set
+/// time. An *operation* is whatever a plugin says must not be cut off by a
+/// restart and must not be started just before one: a machine being built, a
+/// test run being collected. A plugin brackets each with
+/// [`CoreHandle::operation_begin`] and [`CoreHandle::operation_end`]; the
+/// core counts them, and that count is the only thing it waits for.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct MaintenanceInfo {
+    /// `open`, `waiting` (asked for, waiting for a quiet moment) or `closed`.
+    pub state: String,
+    /// Who asked.
+    pub asked_by: String,
+    /// What for, in the asker's words; shown to an administrator.
+    pub reason: String,
+    /// While waiting: when the wait is given up, RFC 3339.
+    pub wait_until: String,
+    /// While closed: when it reopens by itself, RFC 3339.
+    pub reopen_at: String,
+    /// How the last request ended, when it ended by itself.
+    pub note: String,
+    /// What is open now, in the words each was opened with.
+    pub running: Vec<String>,
+}
+
+impl MaintenanceInfo {
+    /// Whether new operations are refused.
+    pub fn is_closed(&self) -> bool {
+        self.state == "closed"
+    }
+
+    pub fn is_waiting(&self) -> bool {
+        self.state == "waiting"
+    }
+}
+
+/// What a caller is told when an operation is refused because the
+/// installation is closed. One sentence, the same everywhere.
+pub const MAINTENANCE_REFUSED: &str =
+    "This installation is being updated. Try again in a few minutes.";
+
+// ---------------------------------------------------------------------------
 // plugin -> core messages
 // ---------------------------------------------------------------------------
 
@@ -440,6 +488,31 @@ pub enum CoreMessage {
     /// policy (see [`DiskReport`]).
     GlobalsGetDiskReport {
         reply: oneshot::Sender<DiskReport>,
+    },
+    /// Open an operation, unless closed for maintenance. `resumed` is one
+    /// that was already running before a restart: it is counted and never
+    /// refused. The reply is the token to end it with, or `None` when
+    /// refused.
+    OperationBegin {
+        title: String,
+        resumed: bool,
+        reply: oneshot::Sender<Option<u64>>,
+    },
+    OperationEnd {
+        token: u64,
+    },
+    MaintenanceGet {
+        reply: oneshot::Sender<MaintenanceInfo>,
+    },
+    /// Close at the next moment no operation is open.
+    MaintenanceAsk {
+        by: String,
+        reason: String,
+        reply: oneshot::Sender<MaintenanceInfo>,
+    },
+    MaintenanceReopen {
+        by: String,
+        reply: oneshot::Sender<MaintenanceInfo>,
     },
     /// Replace the active disk-budget policy. The monitor uses the new one from
     /// its next tick, and the change is persisted so it survives a restart.
@@ -688,6 +761,90 @@ impl CoreHandle {
         self.request(|reply| CoreMessage::GlobalsSetDiskPolicy { policy, reply })
             .await
             .unwrap_or(false)
+    }
+
+    // --- Maintenance ---
+
+    /// Open an operation: work a restart must not cut off. `Ok(token)` to
+    /// pass to [`operation_end`](Self::operation_end); `Err` with
+    /// [`MAINTENANCE_REFUSED`] when the installation is closed for an
+    /// update, and the work must not be started.
+    ///
+    /// A core that cannot be reached refuses nothing: the token is `0`,
+    /// which ending is a no-op for. Work is not held up by a gate that is
+    /// not there.
+    pub async fn operation_begin(&self, title: &str) -> Result<u64, String> {
+        match self
+            .request(|reply| CoreMessage::OperationBegin {
+                title: title.into(),
+                resumed: false,
+                reply,
+            })
+            .await
+        {
+            Some(Some(token)) => Ok(token),
+            Some(None) => Err(MAINTENANCE_REFUSED.to_string()),
+            None => Ok(0),
+        }
+    }
+
+    /// Count an operation that was running before a restart and is being
+    /// carried on. Never refused: letting it finish is what a closing waits
+    /// for.
+    pub async fn operation_resume(&self, title: &str) -> u64 {
+        self.request(|reply| CoreMessage::OperationBegin {
+            title: title.into(),
+            resumed: true,
+            reply,
+        })
+        .await
+        .flatten()
+        .unwrap_or(0)
+    }
+
+    /// Close an operation. Safe to call for a token of `0`.
+    pub async fn operation_end(&self, token: u64) {
+        if token != 0 {
+            let _ = self.tx.send(CoreMessage::OperationEnd { token }).await;
+        }
+    }
+
+    /// The same, from where nothing can be awaited — a destructor. Best
+    /// effort: a full mailbox loses it, and the core then counts the
+    /// operation until the next restart.
+    pub fn operation_end_blocking(&self, token: u64) {
+        if token != 0 {
+            let _ = self.tx.try_send(CoreMessage::OperationEnd { token });
+        }
+    }
+
+    /// Whether the installation takes new operations, and what is open.
+    pub async fn maintenance(&self) -> MaintenanceInfo {
+        self.request(|reply| CoreMessage::MaintenanceGet { reply })
+            .await
+            .unwrap_or_default()
+    }
+
+    /// Ask for a closing at the next moment no operation is open. How long
+    /// to wait and how long to stay closed are the installation's settings.
+    pub async fn maintenance_ask(&self, by: &str, reason: &str) -> MaintenanceInfo {
+        self.request(|reply| CoreMessage::MaintenanceAsk {
+            by: by.into(),
+            reason: reason.into(),
+            reply,
+        })
+        .await
+        .unwrap_or_default()
+    }
+
+    /// Take operations again, and drop a request that is still waiting.
+    pub async fn maintenance_reopen(&self, by: &str) -> MaintenanceInfo {
+        self.request(|reply| CoreMessage::MaintenanceReopen {
+            by: by.into(),
+            reply,
+        })
+        .await
+        .unwrap_or_default()
     }
 
     // --- Auth ---
